@@ -1,76 +1,79 @@
-import ReactMarkdown from "react-markdown";
-import CommentSection from "@/components/blog/CommentSection";
-import { fileDb } from "@/lib/file-db";
+import { connectDB, Post, Comment } from '@/lib/db';
+import PostDetailClient from './PostDetailClient';
 
-interface PostPageProps {
-  params: Promise<{ slug: string }>;
+interface Post {
+  _id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  coverImage?: string;
+  category?: { name: string; slug: string };
+  tags?: { name: string; slug: string }[];
+  author: { name: string; email: string };
+  published: boolean;
+  views: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default async function PostDetailPage({ params }: PostPageProps) {
-  const { slug } = await params;
-  let post: any = null;
-  let error = "";
+interface Comment {
+  _id: string;
+  post: string;
+  author: string;
+  email: string;
+  content: string;
+  approved: boolean;
+  createdAt: string;
+}
 
+async function getPost(slug: string) {
   try {
-    post = await fileDb.getPostBySlug(slug);
+    await connectDB();
+    const post = await Post.findOne({ slug, published: true })
+      .populate('author', 'name email')
+      .populate('category')
+      .populate('tags')
+      .lean();
 
-    if (!post) {
-      error = "文章未找到";
-    }
-  } catch (err) {
-    error = "获取文章失败";
+    if (!post) return null;
+    return JSON.parse(JSON.stringify(post));
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    return null;
   }
+}
 
-  if (error) {
+async function getComments(postId: string) {
+  try {
+    await connectDB();
+    const comments = await Comment.find({ post: postId, approved: true })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return JSON.parse(JSON.stringify(comments));
+  } catch (error) {
+    return [];
+  }
+}
+
+export default async function PostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = await getPost(slug);
+
+  if (!post) {
     return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          {error}
-        </h1>
-        <a
-          href="/"
-          className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-        >
-          返回首页
-        </a>
+      <div className="text-center py-20">
+        <h1 className="text-2xl font-bold text-gray-900">文章未找到</h1>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto">
-      {/* 文章头部 */}
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          {post.title}
-        </h1>
-        <div className="flex items-center text-gray-600 dark:text-gray-400 text-sm space-x-4">
-          <span>
-            {new Date(post.createdAt).toLocaleDateString("zh-CN")}
-          </span>
-          <span>·</span>
-          <span>{post.published ? "已发布" : "草稿"}</span>
-        </div>
-      </header>
+  const comments = await getComments(post._id);
 
-      {/* 封面图 */}
-      {post.coverImage && (
-        <div className="mb-8 rounded-lg overflow-hidden">
-          <img
-            src={post.coverImage}
-            alt={post.title}
-            className="w-full h-auto"
-          />
-        </div>
-      )}
-
-      {/* 文章内容 */}
-      <article className="prose dark:prose-invert max-w-none mb-12">
-        <ReactMarkdown>{post.content}</ReactMarkdown>
-      </article>
-
-      {/* 评论区 */}
-      <CommentSection postId={post.id} />
-    </div>
-  );
+  return <PostDetailClient post={post} initialComments={comments} />;
 }

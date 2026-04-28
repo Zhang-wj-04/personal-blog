@@ -1,51 +1,71 @@
-import PostCard from "@/components/blog/PostCard";
-import { fileDb } from "@/lib/file-db";
+import { connectDB, Post, Category } from '@/lib/db';
+import CategoryClient from './CategoryClient';
 
-interface CategoryPageProps {
-  params: Promise<{ slug: string }>;
+interface Post {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImage?: string;
+  category?: { name: string; slug: string };
+  tags?: { name: string; slug: string }[];
+  author: { name: string; email: string };
+  published: boolean;
+  views: number;
+  createdAt: string;
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { slug } = await params;
-  let posts: any[] = [];
-  let categoryName = slug;
-
+async function getCategory(slug: string) {
   try {
-    const [categories, allPosts] = await Promise.all([
-      fileDb.getCategories(),
-      fileDb.getPosts(),
-    ]);
-
-    const category = categories.find((c) => c.slug === slug);
-    if (category) {
-      categoryName = category.name;
-      posts = allPosts.filter(
-        (p) => p.published && p.categoryIds?.includes(category.id)
-      );
-    }
+    await connectDB();
+    const category = await Category.findOne({ slug }).lean();
+    return JSON.parse(JSON.stringify(category));
   } catch (error) {
-    console.error("Failed to fetch category posts:", error);
+    return null;
+  }
+}
+
+async function getPostsByCategory(slug: string) {
+  try {
+    await connectDB();
+    const category = await Category.findOne({ slug });
+    if (!category) return [];
+
+    const posts = await Post.find({
+      category: category._id,
+      published: true,
+    })
+      .populate('author', 'name email')
+      .populate('category')
+      .populate('tags')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return JSON.parse(JSON.stringify(posts));
+  } catch (error) {
+    console.error('Error fetching posts by category:', error);
+    return [];
+  }
+}
+
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const [category, posts] = await Promise.all([
+    getCategory(slug),
+    getPostsByCategory(slug),
+  ]);
+
+  if (!category) {
+    return (
+      <div className="text-center py-20">
+        <h1 className="text-2xl font-bold text-gray-900">分类未找到</h1>
+      </div>
+    );
   }
 
-  return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        分类: {categoryName}
-      </h1>
-
-      {posts.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <p className="text-gray-500 dark:text-gray-400">
-            该分类下暂无文章
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <CategoryClient category={category} posts={posts} />;
 }

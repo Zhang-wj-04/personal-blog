@@ -1,51 +1,71 @@
-import PostCard from "@/components/blog/PostCard";
-import { fileDb } from "@/lib/file-db";
+import { connectDB, Post, Tag } from '@/lib/db';
+import TagClient from './TagClient';
 
-interface TagPageProps {
-  params: Promise<{ slug: string }>;
+interface Post {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImage?: string;
+  category?: { name: string; slug: string };
+  tags?: { name: string; slug: string }[];
+  author: { name: string; email: string };
+  published: boolean;
+  views: number;
+  createdAt: string;
 }
 
-export default async function TagPage({ params }: TagPageProps) {
-  const { slug } = await params;
-  let posts: any[] = [];
-  let tagName = slug;
-
+async function getTag(slug: string) {
   try {
-    const [tags, allPosts] = await Promise.all([
-      fileDb.getTags(),
-      fileDb.getPosts(),
-    ]);
-
-    const tag = tags.find((t) => t.slug === slug);
-    if (tag) {
-      tagName = tag.name;
-      posts = allPosts.filter(
-        (p) => p.published && p.tagIds?.includes(tag.id)
-      );
-    }
+    await connectDB();
+    const tag = await Tag.findOne({ slug }).lean();
+    return JSON.parse(JSON.stringify(tag));
   } catch (error) {
-    console.error("Failed to fetch tag posts:", error);
+    return null;
+  }
+}
+
+async function getPostsByTag(slug: string) {
+  try {
+    await connectDB();
+    const tag = await Tag.findOne({ slug });
+    if (!tag) return [];
+
+    const posts = await Post.find({
+      tags: tag._id,
+      published: true,
+    })
+      .populate('author', 'name email')
+      .populate('category')
+      .populate('tags')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return JSON.parse(JSON.stringify(posts));
+  } catch (error) {
+    console.error('Error fetching posts by tag:', error);
+    return [];
+  }
+}
+
+export default async function TagPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const [tag, posts] = await Promise.all([
+    getTag(slug),
+    getPostsByTag(slug),
+  ]);
+
+  if (!tag) {
+    return (
+      <div className="text-center py-20">
+        <h1 className="text-2xl font-bold text-gray-900">标签未找到</h1>
+      </div>
+    );
   }
 
-  return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        标签: {tagName}
-      </h1>
-
-      {posts.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <p className="text-gray-500 dark:text-gray-400">
-            该标签下暂无文章
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  return <TagClient tag={tag} posts={posts} />;
 }

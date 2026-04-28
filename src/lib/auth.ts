@@ -1,46 +1,67 @@
 import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { auth as nextAuth } from "@/lib/auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { connectDB, User } from "./db";
+import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  secret: process.env.AUTH_SECRET,
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   providers: [
-    Credentials({
+    CredentialsProvider({
+      name: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (
-          credentials?.email === process.env.ADMIN_EMAIL &&
-          credentials?.password === process.env.ADMIN_PASSWORD
-        ) {
-          return {
-            id: "1",
-            email: process.env.ADMIN_EMAIL,
-            name: "Admin",
-          };
+        if (!credentials?.email || !credentials?.password) {
+          return null;
         }
-        return null;
+
+        await connectDB();
+
+        const user = await User.findOne({ email: credentials.email });
+        if (!user) {
+          return null;
+        }
+
+        const isValid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (!isValid) {
+          return null;
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        };
       },
     }),
   ],
-  pages: {
-    signIn: "/login",
-  },
   callbacks: {
-    async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as any).id = token.sub;
-      }
-      return session;
-    },
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
-        token.sub = user.id;
+        token.id = user.id;
+        token.role = user.role;
       }
       return token;
+    },
+    async session({ session, token }: any) {
+      if (token && session.user) {
+        (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
+      }
+      return session;
     },
   },
 });

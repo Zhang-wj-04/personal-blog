@@ -1,81 +1,171 @@
-import Link from "next/link";
-import { fileDb } from "@/lib/file-db";
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { connectDB, Post, Category, Tag, Comment } from '@/lib/db';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
+import { FileText, FolderOpen, TagIcon, MessageSquare, TrendingUp } from 'lucide-react';
 
-export default async function AdminDashboard() {
-  let postCount = 0;
-  let publishedCount = 0;
-  let draftCount = 0;
-
-  try {
-    const posts = await fileDb.getPosts();
-    postCount = posts.length;
-    publishedCount = posts.filter(p => p.published).length;
-    draftCount = postCount - publishedCount;
-  } catch (error) {
-    console.error("Failed to fetch stats:", error);
+export default async function AdminPage() {
+  const session = await auth();
+  if (!session) {
+    redirect('/login');
   }
+
+  await connectDB();
+
+  const [postsCount, categoriesCount, tagsCount, commentsCount] =
+    await Promise.all([
+      Post.countDocuments({}),
+      Category.countDocuments({}),
+      Tag.countDocuments({}),
+      Comment.countDocuments({}),
+    ]);
+
+  const publishedPostsCount = await Post.countDocuments({ published: true });
+  const draftPostsCount = await Post.countDocuments({ published: false });
+  const pendingCommentsCount = await Comment.countDocuments({ approved: false });
+
+  const stats = [
+    {
+      title: '文章总数',
+      value: postsCount,
+      icon: FileText,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    },
+    {
+      title: '已发布',
+      value: publishedPostsCount,
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+    },
+    {
+      title: '草稿',
+      value: draftPostsCount,
+      icon: FileText,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-100',
+    },
+    {
+      title: '分类',
+      value: categoriesCount,
+      icon: FolderOpen,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    },
+    {
+      title: '标签',
+      value: tagsCount,
+      icon: TagIcon,
+      color: 'text-pink-600',
+      bgColor: 'bg-pink-100',
+    },
+    {
+      title: '评论',
+      value: commentsCount,
+      icon: MessageSquare,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-100',
+    },
+  ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        管理后台
-      </h1>
-
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            总文章数
-          </h3>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-            {postCount}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            已发布
-          </h3>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
-            {publishedCount}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            草稿
-          </h3>
-          <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">
-            {draftCount}
-          </p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">仪表盘</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          欢迎回来，{session.user?.name || session.user?.email}
+        </p>
       </div>
 
-      {/* 快捷操作 */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          快捷操作
-        </h2>
-        <div className="space-y-3">
-          <Link
-            href="/admin/posts/new"
-            className="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            写新文章
-          </Link>
-          <Link
-            href="/admin/posts"
-            className="block w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            管理文章
-          </Link>
-          <Link
-            href="/"
-            className="block w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            查看博客
-          </Link>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.title} className="p-5">
+              <div className="flex items-center">
+                <div className={`rounded-md p-3 ${stat.bgColor}`}>
+                  <Icon className={`h-6 w-6 ${stat.color}`} />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">
+                    {stat.title}
+                  </p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {stat.value}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {pendingCommentsCount > 0 && (
+        <div className="mt-6 rounded-md bg-yellow-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <MessageSquare className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-yellow-800">
+                待审核评论
+              </h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>
+                  有 {pendingCommentsCount} 条评论等待审核。
+                </p>
+              </div>
+              <div className="mt-4">
+                <Link href="/admin/comments">
+                  <Button variant="outline" size="sm">
+                    查看评论
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
+
+      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/admin/posts/new">
+          <Card className="p-5 transition-shadow hover:shadow-md">
+            <h3 className="text-lg font-medium text-gray-900">写新文章</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              创建一篇新的博客文章
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/admin/posts">
+          <Card className="p-5 transition-shadow hover:shadow-md">
+            <h3 className="text-lg font-medium text-gray-900">管理文章</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              编辑或删除已有文章
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/admin/categories">
+          <Card className="p-5 transition-shadow hover:shadow-md">
+            <h3 className="text-lg font-medium text-gray-900">管理分类</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              创建和管理文章分类
+            </p>
+          </Card>
+        </Link>
+
+        <Link href="/admin/comments">
+          <Card className="p-5 transition-shadow hover:shadow-md">
+            <h3 className="text-lg font-medium text-gray-900">管理评论</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              审核和管理用户评论
+            </p>
+          </Card>
+        </Link>
       </div>
     </div>
   );
