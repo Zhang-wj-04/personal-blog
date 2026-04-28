@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
+import { fileDb } from "@/lib/file-db";
 
 // 获取所有分类（公开）
 export async function GET() {
   try {
-    const { db } = await connectToDatabase();
-    const categories = await db
-      .collection("categories")
-      .find({})
-      .sort({ name: 1 })
-      .toArray();
-
+    const categories = await fileDb.getCategories();
+    categories.sort((a, b) => a.name.localeCompare(b.name));
     return NextResponse.json(categories);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }
@@ -22,7 +16,7 @@ export async function GET() {
 // 创建分类（仅管理员）
 export async function POST(request: NextRequest) {
   const session = await auth();
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -31,20 +25,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, slug, description } = body;
 
-    const { db } = await connectToDatabase();
-    
-    const category = {
+    const category = await fileDb.createCategory({
       name,
       slug,
       description: description || "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    });
 
-    const result = await db.collection("categories").insertOne(category);
-    
-    return NextResponse.json({ ...category, _id: result.insertedId }, { status: 201 });
-  } catch (error) {
+    return NextResponse.json(category, { status: 201 });
+  } catch {
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
   }
 }

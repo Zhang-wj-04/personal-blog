@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
+import { fileDb } from "@/lib/file-db";
 
 // 获取评论（公开）
 export async function GET(request: NextRequest) {
@@ -13,15 +12,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { db } = await connectToDatabase();
-    const comments = await db
-      .collection("comments")
-      .find({ postId })
-      .sort({ createdAt: -1 })
-      .toArray();
-
+    const comments = await fileDb.getCommentsByPostId(postId);
+    comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json(comments);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });
   }
 }
@@ -29,7 +23,7 @@ export async function GET(request: NextRequest) {
 // 创建评论（需要登录）
 export async function POST(request: NextRequest) {
   const session = await auth();
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -42,20 +36,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "postId and content are required" }, { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
-    
-    const comment = {
+    const comment = await fileDb.createComment({
       postId,
-      authorId: session.user?.email || "anonymous",
-      authorName: session.user?.name || "Anonymous",
+      author: session.user?.name || "Anonymous",
       content,
-      createdAt: new Date(),
-    };
+    });
 
-    const result = await db.collection("comments").insertOne(comment);
-    
-    return NextResponse.json({ ...comment, _id: result.insertedId }, { status: 201 });
-  } catch (error) {
+    return NextResponse.json(comment, { status: 201 });
+  } catch {
     return NextResponse.json({ error: "Failed to create comment" }, { status: 500 });
   }
 }
@@ -63,7 +51,7 @@ export async function POST(request: NextRequest) {
 // 删除评论（仅管理员）
 export async function DELETE(request: NextRequest) {
   const session = await auth();
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -76,18 +64,14 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { db } = await connectToDatabase();
-    
-    const result = await db.collection("comments").deleteOne({
-      _id: new ObjectId(id),
-    });
+    const result = await fileDb.deleteComment(id);
 
-    if (result.deletedCount === 0) {
+    if (!result) {
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
     return NextResponse.json({ message: "Comment deleted successfully" });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete comment" }, { status: 500 });
   }
 }

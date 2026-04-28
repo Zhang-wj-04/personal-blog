@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import MarkdownEditor from "@/components/ui/MarkdownEditor";
 
 interface Post {
-  _id: string;
+  id: string;
   title: string;
   slug: string;
   content: string;
@@ -114,6 +114,7 @@ export default function EditPost() {
             onChange={(e) => setTitle(e.target.value)}
             required
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="文章标题"
           />
         </div>
 
@@ -128,6 +129,7 @@ export default function EditPost() {
             onChange={(e) => setSlug(e.target.value)}
             required
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+            placeholder="article-slug"
           />
         </div>
 
@@ -141,6 +143,7 @@ export default function EditPost() {
             onChange={(e) => setExcerpt(e.target.value)}
             rows={3}
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="文章摘要（可选，留空将自动生成）"
           />
         </div>
 
@@ -154,6 +157,7 @@ export default function EditPost() {
             value={coverImage}
             onChange={(e) => setCoverImage(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="https://example.com/image.jpg"
           />
         </div>
 

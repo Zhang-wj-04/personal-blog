@@ -1,33 +1,27 @@
-import { connectToDatabase } from "@/lib/db";
 import PostCard from "@/components/blog/PostCard";
+import { fileDb } from "@/lib/file-db";
 
 interface CategoryPageProps {
-  params: {
-    slug: string;
-  };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
+  const { slug } = await params;
   let posts: any[] = [];
-  let categoryName = params.slug;
+  let categoryName = slug;
 
   try {
-    const { db } = await connectToDatabase();
-    
-    // 查找分类
-    const category = await db.collection("categories").findOne({ slug: params.slug });
+    const [categories, allPosts] = await Promise.all([
+      fileDb.getCategories(),
+      fileDb.getPosts(),
+    ]);
+
+    const category = categories.find((c) => c.slug === slug);
     if (category) {
       categoryName = category.name;
-      
-      // 查找该分类下的文章
-      posts = await db
-        .collection("posts")
-        .find({ 
-          categoryIds: category._id.toString(),
-          published: true 
-        })
-        .sort({ createdAt: -1 })
-        .toArray();
+      posts = allPosts.filter(
+        (p) => p.published && p.categoryIds?.includes(category.id)
+      );
     }
   } catch (error) {
     console.error("Failed to fetch category posts:", error);
@@ -47,8 +41,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map(post => (
-            <PostCard key={post._id.toString()} post={post} />
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
       )}

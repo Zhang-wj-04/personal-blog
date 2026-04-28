@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
+import { fileDb } from "@/lib/file-db";
 
 // 获取所有标签（公开）
 export async function GET() {
   try {
-    const { db } = await connectToDatabase();
-    const tags = await db
-      .collection("tags")
-      .find({})
-      .sort({ name: 1 })
-      .toArray();
-
+    const tags = await fileDb.getTags();
+    tags.sort((a, b) => a.name.localeCompare(b.name));
     return NextResponse.json(tags);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch tags" }, { status: 500 });
   }
 }
@@ -22,7 +16,7 @@ export async function GET() {
 // 创建标签（仅管理员）
 export async function POST(request: NextRequest) {
   const session = await auth();
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -31,19 +25,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, slug } = body;
 
-    const { db } = await connectToDatabase();
-    
-    const tag = {
+    const tag = await fileDb.createTag({
       name,
       slug,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    });
 
-    const result = await db.collection("tags").insertOne(tag);
-    
-    return NextResponse.json({ ...tag, _id: result.insertedId }, { status: 201 });
-  } catch (error) {
+    return NextResponse.json(tag, { status: 201 });
+  } catch {
     return NextResponse.json({ error: "Failed to create tag" }, { status: 500 });
   }
 }

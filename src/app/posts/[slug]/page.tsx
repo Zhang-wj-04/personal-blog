@@ -1,32 +1,18 @@
-import { connectToDatabase } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import ReactMarkdown from "react-markdown";
 import CommentSection from "@/components/blog/CommentSection";
+import { fileDb } from "@/lib/file-db";
 
 interface PostPageProps {
-  params: {
-    slug: string;
-  };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function PostDetailPage({ params }: PostPageProps) {
+  const { slug } = await params;
   let post: any = null;
   let error = "";
 
   try {
-    const { db } = await connectToDatabase();
-    
-    // 尝试通过 slug 或 _id 查找文章
-    let query: any = { slug: params.slug };
-    if (params.slug.length === 24) {
-      try {
-        query = { $or: [{ slug: params.slug }, { _id: new ObjectId(params.slug) }] };
-      } catch (e) {
-        // 如果不是有效的 ObjectId，只使用 slug
-      }
-    }
-    
-    post = await db.collection("posts").findOne(query);
+    post = await fileDb.getPostBySlug(slug);
 
     if (!post) {
       error = "文章未找到";
@@ -84,7 +70,7 @@ export default async function PostDetailPage({ params }: PostPageProps) {
       </article>
 
       {/* 评论区 */}
-      <CommentSection postId={post._id.toString()} />
+      <CommentSection postId={post.id} />
     </div>
   );
 }

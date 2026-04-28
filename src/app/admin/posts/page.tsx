@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 interface Post {
-  _id: string;
+  id: string;
   title: string;
   slug: string;
   published: boolean;
@@ -48,7 +48,7 @@ export default function PostsManagement() {
       });
 
       if (response.ok) {
-        setPosts(posts.filter(post => post._id !== id));
+        setPosts(posts.filter(post => post.id !== id));
       } else {
         alert("删除失败");
       }
@@ -107,8 +107,8 @@ export default function PostsManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {posts.map(post => (
-                <tr key={post._id}>
+              {posts.map((post) => (
+                <tr key={post.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {post.title}
@@ -133,13 +133,13 @@ export default function PostsManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
-                      href={`/admin/posts/${post._id}/edit`}
+                      href={`/admin/posts/${post.id}/edit`}
                       className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4"
                     >
                       编辑
                     </Link>
                     <button
-                      onClick={() => handleDelete(post._id)}
+                      onClick={() => handleDelete(post.id)}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     >
                       删除

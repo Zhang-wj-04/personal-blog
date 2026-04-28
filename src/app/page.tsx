@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { connectToDatabase } from "@/lib/db";
 import PostCard from "@/components/blog/PostCard";
+import { fileDb } from "@/lib/file-db";
 
 export default async function HomePage() {
   let posts: any[] = [];
 
   try {
-    const { db } = await connectToDatabase();
-    posts = await db
-      .collection("posts")
-      .find({ published: true })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .toArray();
+    const allPosts = await fileDb.getPosts();
+    posts = allPosts
+      .filter((p) => p.published)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 20);
   } catch (error) {
     console.error("Failed to fetch posts:", error);
   }
@@ -45,8 +43,8 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map(post => (
-              <PostCard key={post._id.toString()} post={post} />
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
             ))}
           </div>
         )}

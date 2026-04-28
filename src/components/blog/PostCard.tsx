@@ -2,7 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 interface Post {
-  _id: string;
+  id: string;
   title: string;
   slug: string;
   excerpt: string;
@@ -14,7 +14,7 @@ export default function PostCard({ post }: { post: Post }) {
   const createdAt = new Date(post.createdAt);
 
   return (
-    <Link href={`/posts/${post.slug || post._id}`}>
+    <Link href={`/posts/${post.slug || post.id}`}>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
         {/* 封面图 */}
         {post.coverImage && (

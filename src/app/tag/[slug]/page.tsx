@@ -1,33 +1,27 @@
-import { connectToDatabase } from "@/lib/db";
 import PostCard from "@/components/blog/PostCard";
+import { fileDb } from "@/lib/file-db";
 
 interface TagPageProps {
-  params: {
-    slug: string;
-  };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function TagPage({ params }: TagPageProps) {
+  const { slug } = await params;
   let posts: any[] = [];
-  let tagName = params.slug;
+  let tagName = slug;
 
   try {
-    const { db } = await connectToDatabase();
-    
-    // 查找标签
-    const tag = await db.collection("tags").findOne({ slug: params.slug });
+    const [tags, allPosts] = await Promise.all([
+      fileDb.getTags(),
+      fileDb.getPosts(),
+    ]);
+
+    const tag = tags.find((t) => t.slug === slug);
     if (tag) {
       tagName = tag.name;
-      
-      // 查找该标签下的文章
-      posts = await db
-        .collection("posts")
-        .find({ 
-          tagIds: tag._id.toString(),
-          published: true 
-        })
-        .sort({ createdAt: -1 })
-        .toArray();
+      posts = allPosts.filter(
+        (p) => p.published && p.tagIds?.includes(tag.id)
+      );
     }
   } catch (error) {
     console.error("Failed to fetch tag posts:", error);
@@ -47,8 +41,8 @@ export default async function TagPage({ params }: TagPageProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map(post => (
-            <PostCard key={post._id.toString()} post={post} />
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
       )}

@@ -1,10 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import { clientPromise } from "./db";
+import { auth as nextAuth } from "@/lib/auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
   secret: process.env.AUTH_SECRET,
   providers: [

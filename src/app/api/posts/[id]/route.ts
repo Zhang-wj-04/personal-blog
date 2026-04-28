@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/db";
-import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
+import { fileDb } from "@/lib/file-db";
 
 // 获取单篇文章
 export async function GET(
@@ -10,23 +9,20 @@ export async function GET(
 ) {
   const session = await auth();
   const { id } = await context.params;
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { db } = await connectToDatabase();
-    const post = await db.collection("posts").findOne({
-      _id: new ObjectId(id),
-    });
+    const post = await fileDb.getPostById(id);
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     return NextResponse.json(post);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch post" }, { status: 500 });
   }
 }
@@ -38,7 +34,7 @@ export async function PUT(
 ) {
   const session = await auth();
   const { id } = await context.params;
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -47,32 +43,23 @@ export async function PUT(
     const body = await request.json();
     const { title, slug, content, excerpt, coverImage, categoryIds, tagIds, published } = body;
 
-    const { db } = await connectToDatabase();
-    
-    const updateData: any = {
-      updatedAt: new Date(),
-    };
-    
-    if (title !== undefined) updateData.title = title;
-    if (slug !== undefined) updateData.slug = slug;
-    if (content !== undefined) updateData.content = content;
-    if (excerpt !== undefined) updateData.excerpt = excerpt;
-    if (coverImage !== undefined) updateData.coverImage = coverImage;
-    if (categoryIds !== undefined) updateData.categoryIds = categoryIds;
-    if (tagIds !== undefined) updateData.tagIds = tagIds;
-    if (published !== undefined) updateData.published = published;
+    const updated = await fileDb.updatePost(id, {
+      ...(title !== undefined && { title }),
+      ...(slug !== undefined && { slug }),
+      ...(content !== undefined && { content }),
+      ...(excerpt !== undefined && { excerpt }),
+      ...(coverImage !== undefined && { coverImage }),
+      ...(categoryIds !== undefined && { categoryIds }),
+      ...(tagIds !== undefined && { tagIds }),
+      ...(published !== undefined && { published }),
+    });
 
-    const result = await db.collection("posts").updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updateData }
-    );
-
-    if (result.matchedCount === 0) {
+    if (!updated) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     return NextResponse.json({ message: "Post updated successfully" });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to update post" }, { status: 500 });
   }
 }
@@ -84,24 +71,20 @@ export async function DELETE(
 ) {
   const session = await auth();
   const { id } = await context.params;
-  
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { db } = await connectToDatabase();
-    
-    const result = await db.collection("posts").deleteOne({
-      _id: new ObjectId(id),
-    });
+    const result = await fileDb.deletePost(id);
 
-    if (result.deletedCount === 0) {
+    if (!result) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
     return NextResponse.json({ message: "Post deleted successfully" });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { connectToDatabase } from "@/lib/db";
+import { fileDb } from "@/lib/file-db";
 
 export default async function AdminDashboard() {
   let postCount = 0;
@@ -7,9 +7,9 @@ export default async function AdminDashboard() {
   let draftCount = 0;
 
   try {
-    const { db } = await connectToDatabase();
-    postCount = await db.collection("posts").countDocuments({});
-    publishedCount = await db.collection("posts").countDocuments({ published: true });
+    const posts = await fileDb.getPosts();
+    postCount = posts.length;
+    publishedCount = posts.filter(p => p.published).length;
     draftCount = postCount - publishedCount;
   } catch (error) {
     console.error("Failed to fetch stats:", error);
