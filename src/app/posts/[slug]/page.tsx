@@ -2,16 +2,9 @@ import { connectDB, Post, Comment } from '@/lib/db';
 import PostDetailClient from './PostDetailClient';
 
 export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const posts = await Post.find({ published: true }).select('slug').lean();
-    return posts.map((post) => ({
-      slug: post.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
+  // For static export, return empty array
+  // This means dynamic routes won't be pre-rendered, but the app will work with client-side navigation
+  return [];
 }
 
 interface Post {

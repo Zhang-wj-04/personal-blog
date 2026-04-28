@@ -2,16 +2,9 @@ import { connectDB, Post, Tag } from '@/lib/db';
 import TagClient from './TagClient';
 
 export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const tags = await Tag.find().select('slug').lean();
-    return tags.map((tag) => ({
-      slug: tag.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
+  // For static export, return empty array (will generate at runtime or skip)
+  // In production with static export, you can hardcode popular tags here
+  return [];
 }
 
 interface Post {

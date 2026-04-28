@@ -2,16 +2,8 @@ import { connectDB, Post, Category } from '@/lib/db';
 import CategoryClient from './CategoryClient';
 
 export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const categories = await Category.find().select('slug').lean();
-    return categories.map((category) => ({
-      slug: category.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
+  // For static export, return empty array (will generate at runtime or skip)
+  return [];
 }
 
 interface Post {
