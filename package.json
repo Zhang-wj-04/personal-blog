@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "[ -d src/app/api ] && mv src/app/api src/app/_api || true; next build; [ -d src/app/_api ] && mv src/app/_api src/app/api || true",
     "postbuild": "rm -rf dist && cp -r out dist",
     "start": "next start",
     "lint": "eslint"
