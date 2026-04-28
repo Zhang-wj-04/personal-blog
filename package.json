@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "rm -rf dist && mv out dist",
     "start": "next start",
     "lint": "eslint"
   },
