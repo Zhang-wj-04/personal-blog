@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[97367,["/_next/static/chunks/1236o~_7vorkb.js","/_next/static/chunks/0ybvjkuftw1j4.js"],"OutletBoundary"]
+3:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","div",null,{"className":"text-center py-20","children":["$","h1",null,{"className":"text-2xl font-bold text-gray-900 dark:text-white","children":"标签未找到"}]}],[["$","script","script-0",{"src":"/_next/static/chunks/0.ub.mqxohrez.js","async":true}]],["$","$L2",null,{"children":["$","$3",null,{"name":"Next.MetadataOutlet","children":"$@4"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Kg7cuSMyiseKqXRM-wecf"}
+4:null

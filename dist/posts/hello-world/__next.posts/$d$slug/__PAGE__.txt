@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:I[34462,["/_next/static/chunks/1236o~_7vorkb.js","/_next/static/chunks/0ybvjkuftw1j4.js","/_next/static/chunks/0fxscz3x~vx3z.js"],"default"]
+3:I[97367,["/_next/static/chunks/1236o~_7vorkb.js","/_next/static/chunks/0ybvjkuftw1j4.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"_id":"hello-world","title":"Hello World","slug":"hello-world","content":"\r\n# Hello World\r\n\r\n欢迎来到我的个人博客！\r\n\r\n这是一个使用 Next.js 构建的静态博客。\r\n\r\n## 特性\r\n\r\n- ✅ Markdown 支持\r\n- ✅ 静态导出\r\n- ✅ 免费部署\r\n\r\n## 代码示例\r\n\r\n```javascript\r\nconsole.log(\"Hello, World!\");\r\n```\r\n\r\n感谢阅读！\r\n","excerpt":"这是我的第一篇博客文章","coverImage":"","category":{"name":"技术","slug":"技术"},"tags":[{"name":"Next.js","slug":"Next.js"},{"name":"博客","slug":"博客"}],"author":{"name":"Admin","email":"admin@example.com"},"published":true,"views":0,"createdAt":"2026-04-28","updatedAt":"2026-04-28"},"initialComments":[]}],[["$","script","script-0",{"src":"/_next/static/chunks/0fxscz3x~vx3z.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Kg7cuSMyiseKqXRM-wecf"}
+5:null
