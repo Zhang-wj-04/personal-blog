@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "postbuild": "rm -rf dist && mv out dist",
+    "build": "next build && node scripts/copy-out-to-dist.js",
     "start": "next start",
     "lint": "eslint"
   },
