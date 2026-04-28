@@ -1,6 +1,19 @@
 import { connectDB, Post, Comment } from '@/lib/db';
 import PostDetailClient from './PostDetailClient';
 
+export async function generateStaticParams() {
+  try {
+    await connectDB();
+    const posts = await Post.find({ published: true }).select('slug').lean();
+    return posts.map((post) => ({
+      slug: post.slug,
+    }));
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
+  }
+}
+
 interface Post {
   _id: string;
   title: string;
